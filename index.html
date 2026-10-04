@@ -1,619 +1,373 @@
 <!DOCTYPE html>
-<html lang="de" class="h-full bg-slate-50">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Auto Ladelog & Kostenmanager</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>E-Auto Ladelog & Kosten</title>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --danger: #ef4444;
+            --solar-bg: #fef3c7; --solar-text: #92400e;
+            --tag-bg: #dbeafe; --tag-text: #1e40af;
+            --nacht-bg: #e0e7ff; --nacht-text: #3730a3;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); line-height: 1.5; padding: 1rem; }
+        .container { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+
+        header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.75rem; }
+        h1 { font-size: 1.25rem; font-weight: 700; color: var(--text-main); }
+        .sub { font-size: 0.8rem; color: var(--text-muted); font-weight: normal; }
+
+        .btn-group { display: flex; gap: 0.5rem; }
+        .btn { padding: 0.5rem 0.85rem; font-size: 0.85rem; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 0.35rem; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-secondary { background-color: #f1f5f9; color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background-color: #e2e8f0; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
+        .stat-card { background: var(--card-bg); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-color); }
+        .stat-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.35rem; font-weight: 700; margin-top: 0.2rem; }
+
+        .card { background: var(--card-bg); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border-color); }
+        .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.85rem; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; align-items: end; }
+        .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+        label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+        input, select { padding: 0.5rem 0.65rem; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; background-color: #fff; outline: none; }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15); }
+
+        .table-container { overflow-x: auto; margin-top: 0.5rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+        th { background-color: #f8fafc; padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer; user-select: none; }
+        th:hover { background-color: #f1f5f9; color: var(--text-main); }
+        td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border-color); }
+        tr:hover td { background-color: #f8fafc; }
+
+        .badge { padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: 600; border-radius: 9999px; display: inline-block; }
+        .badge-solar { background-color: var(--solar-bg); color: var(--solar-text); }
+        .badge-tag { background-color: var(--tag-bg); color: var(--tag-text); }
+        .badge-nacht { background-color: var(--nacht-bg); color: var(--nacht-text); }
+
+        .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0.2rem 0.4rem; border-radius: 4px; }
+        .btn-icon:hover { color: var(--danger); background-color: #fee2e2; }
+
+        .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.85rem; }
+
+        /* Notification toast */
+        #toast { position: fixed; bottom: 1rem; right: 1rem; background: var(--text-main); color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.8rem; display: none; z-index: 100; }
     </style>
 </head>
-<body class="min-h-full flex flex-col text-slate-800 antialiased">
+<body>
 
-    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
-                    <i data-lucide="zap" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold leading-tight">E-Auto Ladelog</h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Kosten & Verbrauch transparent verwalten</p>
-                </div>
+    <div class="container">
+        <header>
+            <div>
+                <h1>⚡ E-Auto Ladelog</h1>
+                <span class="sub">Solar: 0,09 € | Tag: 0,31 € | Nacht: 0,18 €</span>
             </div>
+            <div class="btn-group">
+                <!-- CSV File Input with full fallback mime type support -->
+                <input type="file" id="csvFileInput" accept=".csv, text/csv, text/plain, application/vnd.ms-excel, */*" style="display:none" onchange="importCSV(event)">
+                <button type="button" class="btn btn-secondary" onclick="triggerFileInput()">📥 Import CSV</button>
+                <button type="button" class="btn btn-secondary" onclick="exportCSV()">📤 Export CSV</button>
+            </div>
+        </header>
 
-            <!-- Header Action Buttons -->
-            <div class="flex items-center space-x-2 sm:space-x-3">
-                <input type="file" id="csvFileInput" accept=".csv,.txt" class="hidden" onchange="handleFileSelect(event)">
-                <button onclick="triggerFileInput()" class="px-3 py-2 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5 shadow-sm">
-                    <i data-lucide="upload" class="w-4 h-4 text-slate-400"></i>
-                    <span>CSV Import</span>
-                </button>
-                <button onclick="exportCSV()" class="px-3 py-2 text-xs sm:text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">CSV Export</span>
-                    <span class="sm:hidden">Export</span>
-                </button>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Gesamtkosten</div>
+                <div class="stat-value" id="statKosten">0,00 €</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Gesamt Energie</div>
+                <div class="stat-value" id="statKwh">0,0 kWh</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Ø Preis / kWh</div>
+                <div class="stat-value" id="statAvg">0,00 €</div>
             </div>
         </div>
-    </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-
-        <!-- Toast Notification Banner -->
-        <div id="toast" class="hidden transform transition-all duration-300 fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700">
-            <i id="toastIcon" data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
-            <span id="toastMsg" class="text-sm font-medium">Aktion erfolgreich</span>
-        </div>
-
-        <!-- Metric Cards -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between text-slate-500">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Gesamtkosten</span>
-                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <i data-lucide="wallet" class="w-4 h-4"></i>
-                    </div>
+        <div class="card">
+            <div class="card-title">Neuen Ladevorgang eintragen</div>
+            <form id="chargeForm" onsubmit="addEntry(event)" class="form-grid">
+                <div class="form-group">
+                    <label for="date">Datum</label>
+                    <input type="date" id="date" required>
                 </div>
-                <div class="mt-2">
-                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statKosten">0,00 €</div>
-                    <p class="text-xs text-slate-500 mt-1">Summe aller Ladevorgänge</p>
+                <div class="form-group">
+                    <label for="kwh">Menge (kWh)</label>
+                    <input type="number" id="kwh" step="0.01" min="0.01" placeholder="z. B. 35.5" required>
                 </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between text-slate-500">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Geladene Energie</span>
-                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                        <i data-lucide="battery-charging" class="w-4 h-4"></i>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statKwh">0,0 kWh</div>
-                    <p class="text-xs text-slate-500 mt-1">Gesamtverbrauch</p>
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between text-slate-500">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Ø Preis / kWh</span>
-                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
-                        <i data-lucide="calculator" class="w-4 h-4"></i>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statAvg">0,00 €</div>
-                    <p class="text-xs text-slate-500 mt-1" id="statChargesCount">0 Ladevorgänge</p>
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between text-slate-500 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Aktuelle Tarife</span>
-                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <i data-lucide="tag" class="w-4 h-4"></i>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-1 text-center">
-                    <div class="p-1.5 rounded-lg bg-amber-50/80 border border-amber-100">
-                        <span class="block text-[10px] font-semibold text-amber-800 uppercase">Solar</span>
-                        <span class="text-xs font-bold text-amber-900">0,09 €</span>
-                    </div>
-                    <div class="p-1.5 rounded-lg bg-blue-50/80 border border-blue-100">
-                        <span class="block text-[10px] font-semibold text-blue-800 uppercase">Tag</span>
-                        <span class="text-xs font-bold text-blue-900">0,31 €</span>
-                    </div>
-                    <div class="p-1.5 rounded-lg bg-indigo-50/80 border border-indigo-100">
-                        <span class="block text-[10px] font-semibold text-indigo-800 uppercase">Nacht</span>
-                        <span class="text-xs font-bold text-indigo-900">0,18 €</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Energy Mix Progress Bar -->
-        <section class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-slate-400"></i> Energie-Mix Verteilerschlüssel
-                </h3>
-                <span id="mixTotalText" class="text-xs font-medium text-slate-500">0 kWh total</span>
-            </div>
-            <div class="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden flex shadow-inner">
-                <div id="barSolar" class="bg-amber-400 h-full transition-all duration-500" style="width: 0%" title="Solar"></div>
-                <div id="barTag" class="bg-blue-500 h-full transition-all duration-500" style="width: 0%" title="Tag"></div>
-                <div id="barNacht" class="bg-indigo-600 h-full transition-all duration-500" style="width: 0%" title="Nacht"></div>
-            </div>
-            <div class="flex flex-wrap items-center justify-between gap-4 text-xs pt-1">
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
-                    <span class="text-slate-600 font-medium">Solar: <strong id="pctSolar" class="text-slate-900">0%</strong> (<span id="kwhSolar">0 kWh</span>)</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
-                    <span class="text-slate-600 font-medium">Tag: <strong id="pctTag" class="text-slate-900">0%</strong> (<span id="kwhTag">0 kWh</span>)</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 rounded-full bg-indigo-600 inline-block"></span>
-                    <span class="text-slate-600 font-medium">Nacht: <strong id="pctNacht" class="text-slate-900">0%</strong> (<span id="kwhNacht">0 kWh</span>)</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-            <h2 class="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i> Neuen Ladevorgang erfassen
-            </h2>
-            <form id="chargeForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div>
-                    <label for="date" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Datum</label>
-                    <input type="date" id="date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm transition outline-none">
-                </div>
-                <div>
-                    <label for="kwh" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Menge (kWh)</label>
-                    <input type="number" step="0.01" min="0.1" max="200" id="kwh" placeholder="z. B. 42.5" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm transition outline-none">
-                </div>
-                <div>
-                    <label for="type" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Ladeart & Tarif</label>
-                    <select id="type" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm transition outline-none">
-                        <option value="Solar">Solar (0,09 €/kWh)</option>
-                        <option value="Tag">Tag (0,31 €/kWh)</option>
-                        <option value="Nacht">Nacht (0,18 €/kWh)</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="note" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Notiz (Optional)</label>
-                    <input type="text" id="note" placeholder="z. B. Wallbox / Urlaub" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm transition outline-none">
-                </div>
-                <div class="flex items-end">
-                    <button type="submit" class="w-full h-[42px] bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Hinzufügen
-                    </button>
-                </div>
-            </form>
-        </section>
-
-        <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
-            <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="list" class="w-5 h-5 text-slate-500"></i>
-                    <h2 class="text-base font-semibold text-slate-900">Ladehistorie</h2>
-                    <span id="recordCountBadge" class="bg-slate-200 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">0 Einträge</span>
-                </div>
-                <div class="relative max-w-xs w-full">
-                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="searchInput" oninput="render()" placeholder="Filter nach Notiz, Ladeart..." class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-100/70 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider select-none">
-                            <th onclick="handleSort('date')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
-                                <div class="flex items-center gap-1">
-                                    <span>Datum</span>
-                                    <span id="sort-date" class="text-slate-400"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
-                                </div>
-                            </th>
-                            <th onclick="handleSort('kwh')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
-                                <div class="flex items-center gap-1">
-                                    <span>Menge (kWh)</span>
-                                    <span id="sort-kwh" class="text-slate-400"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
-                                </div>
-                            </th>
-                            <th onclick="handleSort('type')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
-                                <div class="flex items-center gap-1">
-                                    <span>Ladeart</span>
-                                    <span id="sort-type" class="text-slate-400"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
-                                </div>
-                            </th>
-                            <th onclick="handleSort('rate')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
-                                <div class="flex items-center gap-1">
-                                    <span>Tarif</span>
-                                    <span id="sort-rate" class="text-slate-400"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
-                                </div>
-                            </th>
-                            <th onclick="handleSort('cost')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
-                                <div class="flex items-center gap-1">
-                                    <span>Kosten</span>
-                                    <span id="sort-cost" class="text-slate-400"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
-                                </div>
-                            </th>
-                            <th onclick="handleSort('note')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
-                                <div class="flex items-center gap-1">
-                                    <span>Notiz</span>
-                                    <span id="sort-note" class="text-slate-400"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
-                                </div>
-                            </th>
-                            <th class="p-4 text-right">Aktionen</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logTable" class="divide-y divide-slate-100 text-sm"></tbody>
-                </table>
-            </div>
-
-            <div id="emptyState" class="hidden py-12 text-center text-slate-400">
-                <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
-                <p class="text-sm font-medium">Keine Ladevorgänge gefunden</p>
-                <p class="text-xs text-slate-400 mt-1">Erfasse deinen ersten Eintrag oder importiere eine CSV-Datei.</p>
-            </div>
-        </section>
-    </main>
-
-    <!-- Edit Entry Modal -->
-    <div id="editModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <i data-lucide="edit-3" class="w-5 h-5 text-blue-600"></i> Eintrag bearbeiten
-                </h3>
-                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <form id="editForm" class="space-y-4">
-                <input type="hidden" id="editId">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Datum</label>
-                    <input type="date" id="editDate" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Menge (kWh)</label>
-                    <input type="number" step="0.01" min="0.1" id="editKwh" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Ladeart</label>
-                    <select id="editType" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <div class="form-group">
+                    <label for="type">Ladeart</label>
+                    <select id="type">
                         <option value="Solar">Solar (0,09 €)</option>
                         <option value="Tag">Tag (0,31 €)</option>
                         <option value="Nacht">Nacht (0,18 €)</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Notiz</label>
-                    <input type="text" id="editNote" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <div class="form-group">
+                    <label for="note">Notiz (Optional)</label>
+                    <input type="text" id="note" placeholder="z. B. Wallbox">
                 </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="closeEditModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-xl transition">Abbrechen</button>
-                    <button type="submit" class="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl transition">Speichern</button>
-                </div>
+                <button type="submit" class="btn btn-primary">Hinzufügen</button>
             </form>
+        </div>
+
+        <div class="card">
+            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Ladehistorie</span>
+                <span id="recordCount" class="sub">0 Einträge</span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('date')">Datum <span id="sort-date">▼</span></th>
+                            <th onclick="sortTable('kwh')">Menge (kWh) <span id="sort-kwh"></span></th>
+                            <th onclick="sortTable('type')">Ladeart <span id="sort-type"></span></th>
+                            <th onclick="sortTable('rate')">Tarif <span id="sort-rate"></span></th>
+                            <th onclick="sortTable('cost')">Kosten <span id="sort-cost"></span></th>
+                            <th onclick="sortTable('note')">Notiz <span id="sort-note"></span></th>
+                            <th style="text-align:right; cursor:default;">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTable"></tbody>
+                </table>
+                <div id="emptyState" class="empty-state">Keine Einträge vorhanden. Füge den ersten Ladevorgang oben hinzu.</div>
+            </div>
         </div>
     </div>
 
-    <!-- Import Confirmation Modal -->
-    <div id="importConfirmModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <i data-lucide="file-check" class="w-5 h-5 text-emerald-600"></i> CSV Import bestätigen
-                </h3>
-                <button onclick="closeImportConfirmModal()" class="text-slate-400 hover:text-slate-600 p-1">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <p class="text-sm text-slate-600" id="importSummaryText">
-                Es wurden <strong id="parsedCount" class="text-slate-900">0</strong> gültige Einträge gefunden. Wie möchtest du verfahren?
-            </p>
-            <div class="flex flex-col gap-2 pt-2">
-                <button onclick="applyImport('append')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl transition flex items-center justify-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Zu bestehenden Daten anhängen
-                </button>
-                <button onclick="applyImport('replace')" class="w-full py-2.5 bg-slate-100 hover:bg-rose-50 text-rose-700 hover:border-rose-200 border border-slate-200 font-medium text-sm rounded-xl transition flex items-center justify-center gap-2">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Alle bestehenden Daten überschreiben
-                </button>
-                <button onclick="closeImportConfirmModal()" class="w-full py-2 text-slate-500 hover:text-slate-700 text-xs font-medium mt-1">
-                    Abbrechen
-                </button>
-            </div>
-        </div>
-    </div>
+    <div id="toast"></div>
 
     <script>
         const TARIFE = { 'Solar': 0.09, 'Tag': 0.31, 'Nacht': 0.18 };
-
-        const DEMO_DATA = [
-            { id: '1', date: '2026-10-01', kwh: 42.5, type: 'Solar', note: 'Zuhause PV-Anlage' },
-            { id: '2', date: '2026-10-02', kwh: 38.0, type: 'Nacht', note: 'Nachttarif Wallbox' },
-            { id: '3', date: '2026-10-03', kwh: 22.1, type: 'Tag', note: 'Schnellladung unterwegs' },
-            { id: '4', date: '2026-10-04', kwh: 50.0, type: 'Solar', note: 'Wochenende Überschuss' }
-        ];
-
         let entries = [];
-        let pendingParsedEntries = [];
-        let currentSort = { column: 'date', direction: 'desc' };
+        let sortCol = 'date';
+        let sortAsc = false;
 
-        // Initialization
-        window.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('date').value = today;
-
-            const stored = localStorage.getItem('ev_charge_logs_v3');
+        window.onload = function() {
+            document.getElementById('date').valueAsDate = new Date();
+            const stored = localStorage.getItem('ev_logs');
             if (stored) {
-                try {
-                    entries = JSON.parse(stored);
-                } catch(e) {
-                    entries = [...DEMO_DATA];
-                }
-            } else {
-                entries = [...DEMO_DATA];
-                saveEntries();
+                try { entries = JSON.parse(stored); } catch(e) { entries = []; }
             }
             render();
-        });
+        };
 
-        function saveEntries() {
-            localStorage.setItem('ev_charge_logs_v3', JSON.stringify(entries));
+        function save() {
+            localStorage.setItem('ev_logs', JSON.stringify(entries));
+            render();
         }
 
-        function showToast(message, isSuccess = true) {
+        function showToast(msg) {
             const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toastMsg');
-            const toastIcon = document.getElementById('toastIcon');
-
-            toastMsg.innerText = message;
-            if (isSuccess) {
-                toastIcon.setAttribute('data-lucide', 'check-circle');
-                toastIcon.className = "w-5 h-5 text-emerald-400";
-            } else {
-                toastIcon.setAttribute('data-lucide', 'alert-circle');
-                toastIcon.className = "w-5 h-5 text-rose-400";
-            }
-            lucide.createIcons();
-
-            toast.classList.remove('hidden');
-            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2500);
         }
 
-        // Sorting
-        function handleSort(column) {
-            if (currentSort.column === column) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.column = column;
-                currentSort.direction = 'asc';
-            }
-            render();
-        }
-
-        function updateSortIndicators() {
-            const cols = ['date', 'kwh', 'type', 'rate', 'cost', 'note'];
-            cols.forEach(col => {
-                const el = document.getElementById(`sort-${col}`);
-                if (!el) return;
-                if (currentSort.column === col) {
-                    const iconName = currentSort.direction === 'asc' ? 'chevron-up' : 'chevron-down';
-                    el.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 text-blue-600 font-bold"></i>`;
-                } else {
-                    el.innerHTML = `<i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i>`;
-                }
-            });
-        }
-
-        function getProcessedEntries() {
-            const query = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
-            
-            let result = entries.filter(item => {
-                if (!query) return true;
-                return (
-                    item.type.toLowerCase().includes(query) ||
-                    (item.note && item.note.toLowerCase().includes(query)) ||
-                    item.date.includes(query)
-                );
-            });
-
-            result.sort((a, b) => {
-                let valA, valB;
-                if (currentSort.column === 'date') {
-                    valA = new Date(a.date).getTime();
-                    valB = new Date(b.date).getTime();
-                } else if (currentSort.column === 'kwh') {
-                    valA = parseFloat(a.kwh);
-                    valB = parseFloat(b.kwh);
-                } else if (currentSort.column === 'type') {
-                    valA = a.type.toLowerCase();
-                    valB = b.type.toLowerCase();
-                } else if (currentSort.column === 'rate') {
-                    valA = TARIFE[a.type] || 0;
-                    valB = TARIFE[b.type] || 0;
-                } else if (currentSort.column === 'cost') {
-                    valA = parseFloat(a.kwh) * (TARIFE[a.type] || 0);
-                    valB = parseFloat(b.kwh) * (TARIFE[b.type] || 0);
-                } else if (currentSort.column === 'note') {
-                    valA = (a.note || '').toLowerCase();
-                    valB = (b.note || '').toLowerCase();
-                }
-
-                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
-                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
-                return 0;
-            });
-
-            return result;
-        }
-
-        function render() {
-            const tableBody = document.getElementById('logTable');
-            const emptyState = document.getElementById('emptyState');
-            const processed = getProcessedEntries();
-
-            tableBody.innerHTML = '';
-
-            let totalKwh = 0;
-            let totalCost = 0;
-            let kwhSolar = 0, kwhTag = 0, kwhNacht = 0;
-
-            entries.forEach(item => {
-                const rate = TARIFE[item.type] || 0;
-                const kwh = parseFloat(item.kwh) || 0;
-                const cost = kwh * rate;
-
-                totalKwh += kwh;
-                totalCost += cost;
-
-                if (item.type === 'Solar') kwhSolar += kwh;
-                if (item.type === 'Tag') kwhTag += kwh;
-                if (item.type === 'Nacht') kwhNacht += kwh;
-            });
-
-            document.getElementById('statKosten').innerText = totalCost.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-            document.getElementById('statKwh').innerText = totalKwh.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kWh';
-            document.getElementById('statAvg').innerText = totalKwh > 0 ? (totalCost / totalKwh).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '0,00 €';
-            document.getElementById('statChargesCount').innerText = `${entries.length} Ladevorgänge erfasst`;
-            document.getElementById('recordCountBadge').innerText = `${processed.length} von ${entries.length}`;
-
-            const pctSolar = totalKwh > 0 ? (kwhSolar / totalKwh) * 100 : 0;
-            const pctTag = totalKwh > 0 ? (kwhTag / totalKwh) * 100 : 0;
-            const pctNacht = totalKwh > 0 ? (kwhNacht / totalKwh) * 100 : 0;
-
-            document.getElementById('barSolar').style.width = pctSolar + '%';
-            document.getElementById('barTag').style.width = pctTag + '%';
-            document.getElementById('barNacht').style.width = pctNacht + '%';
-
-            document.getElementById('pctSolar').innerText = pctSolar.toFixed(1) + '%';
-            document.getElementById('pctTag').innerText = pctTag.toFixed(1) + '%';
-            document.getElementById('pctNacht').innerText = pctNacht.toFixed(1) + '%';
-
-            document.getElementById('kwhSolar').innerText = kwhSolar.toFixed(1) + ' kWh';
-            document.getElementById('kwhTag').innerText = kwhTag.toFixed(1) + ' kWh';
-            document.getElementById('kwhNacht').innerText = kwhNacht.toFixed(1) + ' kWh';
-            document.getElementById('mixTotalText').innerText = totalKwh.toFixed(1) + ' kWh gesamt';
-
-            if (processed.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-            }
-
-            processed.forEach(item => {
-                const rate = TARIFE[item.type] || 0;
-                const cost = item.kwh * rate;
-
-                const dateParts = item.date.split('-');
-                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}` : item.date;
-
-                let badgeClass = "bg-slate-100 text-slate-800 border-slate-200";
-                if (item.type === 'Solar') badgeClass = "bg-amber-100 text-amber-800 border-amber-200/60";
-                if (item.type === 'Tag') badgeClass = "bg-blue-100 text-blue-800 border-blue-200/60";
-                if (item.type === 'Nacht') badgeClass = "bg-indigo-100 text-indigo-800 border-indigo-200/60";
-
-                const row = document.createElement('tr');
-                row.className = "hover:bg-slate-50/80 transition border-b border-slate-100";
-                row.innerHTML = `
-                    <td class="p-4 font-semibold text-slate-900 whitespace-nowrap">${formattedDate}</td>
-                    <td class="p-4 font-medium text-slate-800 whitespace-nowrap">${item.kwh.toFixed(2)} kWh</td>
-                    <td class="p-4 whitespace-nowrap">
-                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full border ${badgeClass}">${item.type}</span>
-                    </td>
-                    <td class="p-4 text-slate-500 whitespace-nowrap">${rate.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</td>
-                    <td class="p-4 font-bold text-slate-900 whitespace-nowrap">${cost.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</td>
-                    <td class="p-4 text-slate-500 text-xs max-w-xs truncate" title="${item.note || ''}">${item.note || '-'}</td>
-                    <td class="p-4 text-right whitespace-nowrap">
-                        <div class="flex items-center justify-end space-x-1">
-                            <button onclick="openEditModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Bearbeiten">
-                                <i data-lucide="edit-2" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="deleteEntry('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Löschen">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-
-            updateSortIndicators();
-            lucide.createIcons();
-        }
-
-        document.getElementById('chargeForm').addEventListener('submit', (e) => {
+        function addEntry(e) {
             e.preventDefault();
-
             const date = document.getElementById('date').value;
             const kwh = parseFloat(document.getElementById('kwh').value);
             const type = document.getElementById('type').value;
             const note = document.getElementById('note').value.trim();
 
-            entries.push({ id: Date.now().toString(), date, kwh, type, note });
-            saveEntries();
-            render();
+            if (!date || isNaN(kwh) || kwh <= 0) return;
 
+            entries.push({ id: Date.now().toString(), date, kwh, type, note });
             document.getElementById('kwh').value = '';
             document.getElementById('note').value = '';
-            showToast('Ladevorgang hinzugefügt');
-        });
+            
+            save();
+            showToast('Ladevorgang gespeichert');
+        }
 
         function deleteEntry(id) {
             entries = entries.filter(item => item.id !== id);
-            saveEntries();
-            render();
-            showToast('Eintrag gelöscht', false);
+            save();
+            showToast('Eintrag gelöscht');
         }
 
-        function openEditModal(id) {
-            const item = entries.find(e => e.id === id);
-            if (!item) return;
-
-            document.getElementById('editId').value = item.id;
-            document.getElementById('editDate').value = item.date;
-            document.getElementById('editKwh').value = item.kwh;
-            document.getElementById('editType').value = item.type;
-            document.getElementById('editNote').value = item.note || '';
-
-            document.getElementById('editModal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').classList.add('hidden');
-        }
-
-        document.getElementById('editForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const id = document.getElementById('editId').value;
-            const index = entries.findIndex(item => item.id === id);
-
-            if (index !== -1) {
-                entries[index] = {
-                    id,
-                    date: document.getElementById('editDate').value,
-                    kwh: parseFloat(document.getElementById('editKwh').value),
-                    type: document.getElementById('editType').value,
-                    note: document.getElementById('editNote').value.trim()
-                };
-                saveEntries();
-                render();
-                closeEditModal();
-                showToast('Eintrag aktualisiert');
+        function sortTable(col) {
+            if (sortCol === col) {
+                sortAsc = !sortAsc;
+            } else {
+                sortCol = col;
+                sortAsc = true;
             }
-        });
+            render();
+        }
+
+        function render() {
+            const tbody = document.getElementById('logTable');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            let totalKwh = 0;
+            let totalCost = 0;
+
+            // Sort entries
+            entries.sort((a, b) => {
+                let valA, valB;
+                if (sortCol === 'date') { valA = a.date; valB = b.date; }
+                else if (sortCol === 'kwh') { valA = a.kwh; valB = b.kwh; }
+                else if (sortCol === 'type') { valA = a.type; valB = b.type; }
+                else if (sortCol === 'rate') { valA = TARIFE[a.type] || 0; valB = TARIFE[b.type] || 0; }
+                else if (sortCol === 'cost') { valA = a.kwh * (TARIFE[a.type] || 0); valB = b.kwh * (TARIFE[b.type] || 0); }
+                else if (sortCol === 'note') { valA = (a.note || '').toLowerCase(); valB = (b.note || '').toLowerCase(); }
+
+                if (valA < valB) return sortAsc ? -1 : 1;
+                if (valA > valB) return sortAsc ? 1 : -1;
+                return 0;
+            });
+
+            // Update Sort Indicators
+            ['date', 'kwh', 'type', 'rate', 'cost', 'note'].forEach(col => {
+                const el = document.getElementById(`sort-${col}`);
+                if (el) el.innerText = sortCol === col ? (sortAsc ? '▲' : '▼') : '';
+            });
+
+            entries.forEach(item => {
+                const rate = TARIFE[item.type] || 0;
+                const cost = item.kwh * rate;
+                totalKwh += item.kwh;
+                totalCost += cost;
+
+                const tr = document.createElement('tr');
+                const badgeClass = item.type === 'Solar' ? 'badge-solar' : (item.type === 'Tag' ? 'badge-tag' : 'badge-nacht');
+
+                tr.innerHTML = `
+                    <td>${formatDate(item.date)}</td>
+                    <td><strong>${item.kwh.toFixed(2)}</strong> kWh</td>
+                    <td><span class="badge ${badgeClass}">${item.type}</span></td>
+                    <td>${rate.toFixed(2).replace('.', ',')} €</td>
+                    <td><strong>${cost.toFixed(2).replace('.', ',')} €</strong></td>
+                    <td style="color:var(--text-muted);">${escapeHtml(item.note || '-')}</td>
+                    <td style="text-align:right;">
+                        <button class="btn-icon" onclick="deleteEntry('${item.id}')" title="Löschen">🗑</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // KPI calculation
+            document.getElementById('statKosten').innerText = totalCost.toFixed(2).replace('.', ',') + ' €';
+            document.getElementById('statKwh').innerText = totalKwh.toFixed(1).replace('.', ',') + ' kWh';
+            document.getElementById('statAvg').innerText = totalKwh > 0 ? (totalCost / totalKwh).toFixed(2).replace('.', ',') + ' €' : '0,00 €';
+            document.getElementById('recordCount').innerText = `${entries.length} Einträge`;
+
+            emptyState.style.display = entries.length === 0 ? 'block' : 'none';
+        }
+
+        function formatDate(d) {
+            const p = d.split('-');
+            return p.length === 3 ? `${p[2]}.${p[1]}.${p[0]}` : d;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function triggerFileInput() {
+            const fileInput = document.getElementById('csvFileInput');
+            fileInput.value = ''; // Clear selection to allow re-uploading same file
+            fileInput.click();
+        }
+
+        function importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r\n|\n/);
+                let importedCount = 0;
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // Support comma or semicolon separation
+                    const delim = line.includes(';') ? ';' : ',';
+                    const parts = line.split(delim).map(p => p.trim().replace(/^"|"$/g, ''));
+
+                    if (parts.length >= 3) {
+                        let date = parts[0];
+                        let kwhRaw = parts[1];
+                        let typeRaw = parts[2];
+                        let note = parts[5] || parts[3] || '';
+
+                        // Skip header row if present
+                        if (isNaN(parseFloat(kwhRaw.replace(',', '.'))) && i === 0) continue;
+
+                        // Normalize date DD.MM.YYYY to YYYY-MM-DD
+                        if (date.includes('.')) {
+                            const dp = date.split('.');
+                            if (dp.length === 3) date = `${dp[2]}-${dp[1].padStart(2, '0')}-${dp[0].padStart(2, '0')}`;
+                        }
+
+                        const kwh = parseFloat(kwhRaw.replace(',', '.'));
+                        if (!date || isNaN(kwh)) continue;
+
+                        let type = 'Tag';
+                        const tLower = typeRaw.toLowerCase();
+                        if (tLower.includes('solar') || tLower.includes('sonne')) type = 'Solar';
+                        else if (tLower.includes('nacht')) type = 'Nacht';
+
+                        entries.push({
+                            id: (Date.now() + i + Math.random()).toString(),
+                            date: date,
+                            kwh: kwh,
+                            type: type,
+                            note: note !== typeRaw && note !== kwhRaw ? note : ''
+                        });
+                        importedCount++;
+                    }
+                }
+
+                if (importedCount > 0) {
+                    save();
+                    showToast(`${importedCount} Einträge erfolgreich importiert`);
+                } else {
+                    showToast('Keine gültigen Ladedaten gefunden');
+                }
+            };
+
+            reader.readAsText(file);
+        }
 
         function exportCSV() {
             if (entries.length === 0) {
-                showToast('Keine Daten zum Exportieren vorhanden', false);
+                showToast('Keine Daten zum Exportieren');
                 return;
             }
 
-            let csvContent = "Datum,kWh,Ladeart,Tarif,Kosten,Notiz\n";
-
-            entries.forEach(e => {
-                const rate = TARIFE[e.type] || 0;
-                const cost = e.kwh * rate;
-                const noteClean = (e.note || '').replace(/"/g, '""');
-                csvContent += `${e.date},${e.kwh},${e.type},${rate},${cost.toFixed(2)},"${noteClean}"\n`;
+            let csv = "Datum;kWh;Ladeart;Tarif (€);Kosten (€);Notiz\n";
+            entries.forEach(item => {
+                const rate = TARIFE[item.type] || 0;
+                const cost = item.kwh * rate;
+                csv += `${item.date};${item.kwh.toString().replace('.', ',')};${item.type};${rate.toString().replace('.', ',')};${cost.toFixed(2).replace('.', ',')};"${(item.note || '').replace(/"/g, '""')}"\n`;
             });
 
-            // Include UTF-8 BOM for Excel compatibility
-            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            // UTF-8 BOM for correct character encoding in Excel
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -624,121 +378,6 @@
             URL.revokeObjectURL(url);
 
             showToast('CSV Export erfolgreich');
-        }
-
-        function triggerFileInput() {
-            const input = document.getElementById('csvFileInput');
-            input.value = ''; // Reset
-            input.click();
-        }
-
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                parseCSVContent(e.target.result);
-            };
-            reader.readAsText(file);
-        }
-
-        // Robust CSV Line Splitter supporting commas and semicolons
-        function parseCSVLine(line) {
-            const delimiter = line.includes(';') ? ';' : ',';
-            const pattern = new RegExp(
-                `(\\s*"(?:""|[^"])*"\\s*|[^${delimiter}]+)?(?=${delimiter}|$)`,
-                'gi'
-            );
-            
-            const matches = [];
-            let match = null;
-            while ((match = pattern.exec(line)) !== null) {
-                if (match.index === pattern.lastIndex) pattern.lastIndex++;
-                let val = match[1] ? match[1].trim() : '';
-                if (val.startsWith('"') && val.endsWith('"')) {
-                    val = val.substring(1, val.length - 1).replace(/""/g, '"');
-                }
-                matches.push(val);
-            }
-            return matches;
-        }
-
-        function parseCSVContent(text) {
-            const lines = text.split(/\r\n|\n/);
-            pendingParsedEntries = [];
-
-            if (lines.length < 2) {
-                showToast('CSV-Datei ist leer oder ungültig', false);
-                return;
-            }
-
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-
-                const cols = parseCSVLine(line);
-                if (cols.length >= 3) {
-                    let rawDate = cols[0];
-                    let rawKwh = cols[1];
-                    let rawType = cols[2];
-                    let rawNote = cols[5] || cols[3] || '';
-
-                    // Normalize date format DD.MM.YYYY to YYYY-MM-DD
-                    if (rawDate.includes('.')) {
-                        const parts = rawDate.split('.');
-                        if (parts.length === 3) {
-                            rawDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                        }
-                    }
-
-                    // Convert German decimal commas to dots
-                    const kwhVal = parseFloat(rawKwh.replace(',', '.'));
-
-                    // Normalize Charge Type
-                    let typeVal = 'Tag';
-                    const lowerType = rawType.toLowerCase();
-                    if (lowerType.includes('solar') || lowerType.includes('sonne')) typeVal = 'Solar';
-                    else if (lowerType.includes('nacht')) typeVal = 'Nacht';
-
-                    if (rawDate && !isNaN(kwhVal)) {
-                        pendingParsedEntries.push({
-                            id: (Date.now() + i + Math.random()).toString(),
-                            date: rawDate,
-                            kwh: kwhVal,
-                            type: typeVal,
-                            note: rawNote !== rawType && rawNote !== rawKwh ? rawNote : ''
-                        });
-                    }
-                }
-            }
-
-            if (pendingParsedEntries.length === 0) {
-                showToast('Keine gültigen Datensätze in CSV gefunden', false);
-                return;
-            }
-
-            // Open Confirmation Dialog
-            document.getElementById('parsedCount').innerText = pendingParsedEntries.length;
-            document.getElementById('importConfirmModal').classList.remove('hidden');
-        }
-
-        function applyImport(mode) {
-            if (mode === 'replace') {
-                entries = [...pendingParsedEntries];
-            } else {
-                entries = [...entries, ...pendingParsedEntries];
-            }
-
-            saveEntries();
-            render();
-            closeImportConfirmModal();
-            showToast(`${pendingParsedEntries.length} Einträge importiert!`);
-            pendingParsedEntries = [];
-        }
-
-        function closeImportConfirmModal() {
-            document.getElementById('importConfirmModal').classList.add('hidden');
         }
     </script>
 </body>
