@@ -1,199 +1,310 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Auto Ladelog & Kosten</title>
-
+    <title>E-Auto Ladelog & Kostenmanager</title>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <div class="max-w-4xl mx-auto space-y-6">
-        
-        <!-- Header -->
-        <header class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    <i data-lucide="zap" class="text-amber-500"></i> E-Auto Ladelog
-                </h1>
-                <p class="text-sm text-slate-500">Solar (9ct) | Tag (31ct) | Nacht (18ct)</p>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom Scrollbar for better UX */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-full flex flex-col text-slate-800 antialiased">
+
+    <!-- Navigation Header -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
+                    <i data-lucide="zap" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">E-Auto Ladelog</h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Kosten & Verbrauch transparent verwalten</p>
+                </div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="exportCSV()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg flex items-center gap-1 transition">
-                    <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="openImportModal()" class="px-3 py-2 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="upload" class="w-4 h-4 text-slate-400"></i>
+                    <span>Importieren</span>
+                </button>
+                <button onclick="exportCSV()" class="px-3 py-2 text-xs sm:text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">CSV Export</span>
+                    <span class="sm:hidden">Export</span>
                 </button>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- KPI Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gesamtkosten</span>
-                <div class="text-2xl font-bold text-slate-900 mt-1" id="statKosten">0,00 €</div>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gesamt geladen</span>
-                <div class="text-2xl font-bold text-slate-900 mt-1" id="statKwh">0,0 kWh</div>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ø Preis / kWh</span>
-                <div class="text-2xl font-bold text-slate-900 mt-1" id="statAvg">0,00 €</div>
-            </div>
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Notification Toast Banner -->
+        <div id="toast" class="hidden transform transition-all duration-300 fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700">
+            <i id="toastIcon" data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+            <span id="toastMsg" class="text-sm font-medium">Aktion erfolgreich</span>
         </div>
 
-        <!-- Formular -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 class="text-lg font-semibold mb-4 text-slate-900 flex items-center gap-2">
-                <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i> Ladevorgang hinzufügen
+        <!-- KPI Metrics Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Cost Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-500">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Gesamtkosten</span>
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                        <i data-lucide="wallet" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statKosten">0,00 €</div>
+                    <p class="text-xs text-slate-500 mt-1">Summe aller Ladevorgänge</p>
+                </div>
+            </div>
+
+            <!-- Total Energy Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-500">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Geladene Energie</span>
+                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <i data-lucide="battery-charging" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statKwh">0,0 kWh</div>
+                    <p class="text-xs text-slate-500 mt-1">Gesamtverbrauch</p>
+                </div>
+            </div>
+
+            <!-- Average Price Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-500">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Ø Preis / kWh</span>
+                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                        <i data-lucide="calculator" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statAvg">0,00 €</div>
+                    <p class="text-xs text-slate-500 mt-1" id="statChargesCount">0 Ladevorgänge</p>
+                </div>
+            </div>
+
+            <!-- Tarif Prices Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-500 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Aktuelle Tarife</span>
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <i data-lucide="tag" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-1 text-center">
+                    <div class="p-1.5 rounded-lg bg-amber-50/80 border border-amber-100">
+                        <span class="block text-[10px] font-semibold text-amber-800 uppercase">Solar</span>
+                        <span class="text-xs font-bold text-amber-900">0,09 €</span>
+                    </div>
+                    <div class="p-1.5 rounded-lg bg-blue-50/80 border border-blue-100">
+                        <span class="block text-[10px] font-semibold text-blue-800 uppercase">Tag</span>
+                        <span class="text-xs font-bold text-blue-900">0,31 €</span>
+                    </div>
+                    <div class="p-1.5 rounded-lg bg-indigo-50/80 border border-indigo-100">
+                        <span class="block text-[10px] font-semibold text-indigo-800 uppercase">Nacht</span>
+                        <span class="text-xs font-bold text-indigo-900">0,18 €</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Energy Mix Distribution Card -->
+        <section class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-slate-400"></i> Energie-Mix Verteilerschlüssel
+                </h3>
+                <span id="mixTotalText" class="text-xs font-medium text-slate-500">0 kWh total</span>
+            </div>
+            
+            <!-- Multi-bar progress -->
+            <div class="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden flex shadow-inner">
+                <div id="barSolar" class="bg-amber-400 h-full transition-all duration-500 relative" style="width: 0%" title="Solar"></div>
+                <div id="barTag" class="bg-blue-500 h-full transition-all duration-500 relative" style="width: 0%" title="Tag"></div>
+                <div id="barNacht" class="bg-indigo-600 h-full transition-all duration-500 relative" style="width: 0%" title="Nacht"></div>
+            </div>
+
+            <!-- Legend items -->
+            <div class="flex flex-wrap items-center justify-between gap-4 text-xs pt-1">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
+                    <span class="text-slate-600 font-medium">Solar: <strong id="pctSolar" class="text-slate-900">0%</strong> (<span id="kwhSolar">0 kWh</span>)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+                    <span class="text-slate-600 font-medium">Tag: <strong id="pctTag" class="text-slate-900">0%</strong> (<span id="kwhTag">0 kWh</span>)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-indigo-600 inline-block"></span>
+                    <span class="text-slate-600 font-medium">Nacht: <strong id="pctNacht" class="text-slate-900">0%</strong> (<span id="kwhNacht">0 kWh</span>)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add Charge Entry Form -->
+        <section class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+            <h2 class="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i> Neuen Ladevorgang erfassen
             </h2>
-            <form id="chargeForm" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+
+            <form id="chargeForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Datum -->
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Datum</label>
-                    <input type="date" id="date" required class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <label for="date" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Datum</label>
+                    <input type="date" id="date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition outline-none">
                 </div>
+
+                <!-- kWh Menge -->
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Menge (kWh)</label>
-                    <input type="number" step="0.1" id="kwh" placeholder="z. B. 35.5" required class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <label for="kwh" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Menge (kWh)</label>
+                    <input type="number" step="0.01" min="0.1" max="200" id="kwh" placeholder="z. B. 42.5" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition outline-none">
                 </div>
+
+                <!-- Ladeart Dropdown -->
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Ladeart</label>
-                    <select id="type" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <option value="Solar">Solar (0,09 €)</option>
-                        <option value="Tag">Tag (0,31 €)</option>
-                        <option value="Nacht">Nacht (0,18 €)</option>
+                    <label for="type" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Ladeart & Tarif</label>
+                    <select id="type" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition outline-none">
+                        <option value="Solar">Solar (0,09 €/kWh)</option>
+                        <option value="Tag">Tag (0,31 €/kWh)</option>
+                        <option value="Nacht">Nacht (0,18 €/kWh)</option>
                     </select>
                 </div>
+
+                <!-- Notiz -->
                 <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Notiz (Optional)</label>
-                    <input type="text" id="note" placeholder="z. B. Zuhause" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <label for="note" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Notiz (Optional)</label>
+                    <input type="text" id="note" placeholder="z. B. Wallbox / Urlaub" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition outline-none">
                 </div>
+
+                <!-- Submit Button -->
                 <div class="flex items-end">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium p-2 rounded-lg transition flex items-center justify-center gap-1">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Speichern
+                    <button type="submit" class="w-full h-[42px] bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Hinzufügen
                     </button>
                 </div>
             </form>
-        </div>
+        </section>
 
-        <!-- Tabelle -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <!-- Interactive Data Table Container -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+            
+            <!-- Table Header Toolbar -->
+            <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="list" class="w-5 h-5 text-slate-500"></i>
+                    <h2 class="text-base font-semibold text-slate-900">Ladehistorie</h2>
+                    <span id="recordCountBadge" class="bg-slate-200 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">0 Einträge</span>
+                </div>
+
+                <!-- Quick Filter / Search -->
+                <div class="relative max-w-xs w-full">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="render()" placeholder="Filter nach Notiz, Ladeart..." class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Table Scroll Wrapper -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            <th class="p-4">Datum</th>
-                            <th class="p-4">Menge</th>
-                            <th class="p-4">Ladeart</th>
-                            <th class="p-4">Tarif</th>
-                            <th class="p-4">Kosten</th>
+                        <tr class="bg-slate-100/70 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider select-none">
+                            <!-- Clickable Headers for Sorting -->
+                            <th onclick="handleSort('date')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
+                                <div class="flex items-center gap-1">
+                                    <span>Datum</span>
+                                    <span id="sort-date" class="text-slate-400 group-hover:text-slate-600"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
+                                </div>
+                            </th>
+                            <th onclick="handleSort('kwh')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
+                                <div class="flex items-center gap-1">
+                                    <span>Menge (kWh)</span>
+                                    <span id="sort-kwh" class="text-slate-400 group-hover:text-slate-600"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
+                                </div>
+                            </th>
+                            <th onclick="handleSort('type')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
+                                <div class="flex items-center gap-1">
+                                    <span>Ladeart</span>
+                                    <span id="sort-type" class="text-slate-400 group-hover:text-slate-600"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
+                                </div>
+                            </th>
+                            <th onclick="handleSort('rate')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
+                                <div class="flex items-center gap-1">
+                                    <span>Tarif</span>
+                                    <span id="sort-rate" class="text-slate-400 group-hover:text-slate-600"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
+                                </div>
+                            </th>
+                            <th onclick="handleSort('cost')" class="p-4 cursor-pointer hover:bg-slate-200/60 transition group">
+                                <div class="flex items-center gap-1">
+                                    <span>Kosten</span>
+                                    <span id="sort-cost" class="text-slate-400 group-hover:text-slate-600"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></span>
+                                </div>
+                            </th>
                             <th class="p-4">Notiz</th>
-                            <th class="p-4 text-right">Aktion</th>
+                            <th class="p-4 text-right">Aktionen</th>
                         </tr>
                     </thead>
                     <tbody id="logTable" class="divide-y divide-slate-100 text-sm">
-                        <!-- Einträge werden per JS eingefügt -->
+                        <!-- Dynamic Content injected by JS -->
                     </tbody>
                 </table>
             </div>
-        </div>
 
-    </div>
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden py-12 text-center text-slate-400">
+                <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                <p class="text-sm font-medium">Keine Ladevorgänge gefunden</p>
+                <p class="text-xs text-slate-400 mt-1">Füge einen Eintrag oben hinzu oder importiere deine Daten.</p>
+            </div>
+        </section>
 
-    <script>
-        const TARIFE = { 'Solar': 0.09, 'Tag': 0.31, 'Nacht': 0.18 };
-        let entries = JSON.parse(localStorage.getItem('ev_charge_logs')) || [];
+    </main>
 
-        document.getElementById('date').valueAsDate = new Date();
+    <!-- Modal: Edit Entry -->
+    <div id="editModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-5 h-5 text-blue-600"></i> Eintrag bearbeiten
+                </h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
 
-        function saveAndRender() {
-            localStorage.setItem('ev_charge_logs', JSON.stringify(entries));
-            render();
-        }
-
-        function render() {
-            const table = document.getElementById('logTable');
-            table.innerHTML = '';
-
-            let totalKwh = 0;
-            let totalCost = 0;
-
-            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            entries.forEach((item, index) => {
-                const rate = TARIFE[item.type];
-                const cost = item.kwh * rate;
-                totalKwh += item.kwh;
-                totalCost += cost;
-
-                const row = document.createElement('tr');
-                row.className = "hover:bg-slate-50 transition";
-                row.innerHTML = `
-                    <td class="p-4 font-medium text-slate-900">${item.date}</td>
-                    <td class="p-4">${item.kwh.toFixed(1)} kWh</td>
-                    <td class="p-4">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.type === 'Solar' ? 'bg-amber-100 text-amber-800' :
-                            item.type === 'Tag' ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
-                        }">
-                            ${item.type}
-                        </span>
-                    </td>
-                    <td class="p-4 text-slate-500">${rate.toFixed(2)} €</td>
-                    <td class="p-4 font-semibold text-slate-900">${cost.toFixed(2)} €</td>
-                    <td class="p-4 text-slate-500">${item.note || '-'}</td>
-                    <td class="p-4 text-right">
-                        <button onclick="deleteEntry(${index})" class="text-rose-500 hover:text-rose-700 p-1">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </td>
-                `;
-                table.appendChild(row);
-            });
-
-            document.getElementById('statKosten').innerText = totalCost.toFixed(2) + ' €';
-            document.getElementById('statKwh').innerText = totalKwh.toFixed(1) + ' kWh';
-            document.getElementById('statAvg').innerText = totalKwh > 0 ? (totalCost / totalKwh).toFixed(2) + ' €' : '0,00 €';
-
-            lucide.createIcons();
-        }
-
-        document.getElementById('chargeForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const date = document.getElementById('date').value;
-            const kwh = parseFloat(document.getElementById('kwh').value);
-            const type = document.getElementById('type').value;
-            const note = document.getElementById('note').value;
-
-            entries.push({ date, kwh, type, note });
-            document.getElementById('kwh').value = '';
-            document.getElementById('note').value = '';
-            saveAndRender();
-        });
-
-        function deleteEntry(index) {
-            entries.splice(index, 1);
-            saveAndRender();
-        }
-
-        function exportCSV() {
-            let csv = "Datum,kWh,Ladeart,Tarif (€/kWh),Kosten (€),Notiz\n";
-            entries.forEach(e => {
-                const cost = e.kwh * TARIFE[e.type];
-                csv += `${e.date},${e.kwh},${e.type},${TARIFE[e.type]},${cost.toFixed(2)},"${e.note || ''}"\n`;
-            });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ladelog_export.csv';
-            a.click();
-        }
-
-        render();
-    </script>
-</body>
-</html>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editId">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Datum</label>
+                    <input type="date" id="editDate" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Menge (kWh)</label>
+                    <input type="number" step="0.01" min="0.1" id="editKwh" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Ladeart</label>
+                    <select id="editType" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="Solar">Solar (0,09 €)</option>
+                        <option value="Ta
