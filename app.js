@@ -2,55 +2,63 @@ const TARIFE = { 'Solar': 0.09, 'Tag': 0.31, 'Nacht': 0.18 };
 let logs = JSON.parse(localStorage.getItem('ev_logs')) || [];
 let sortCol = 'date', sortAsc = false;
 
-document.getElementById('fDate').valueAsDate = new Date();
+// Datum auf heute setzen, falls Element existiert
+const dateInput = document.getElementById('fDate');
+if (dateInput) dateInput.valueAsDate = new Date();
 
-document.getElementById('addForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    logs.push({
-        id: String(Date.now()),
-        date: document.getElementById('fDate').value,
-        kwh: parseFloat(document.getElementById('fKwh').value),
-        type: document.getElementById('fType').value,
-        paid: false
+const form = document.getElementById('addForm');
+if (form) {
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        logs.push({
+            id: Date.now().toString(),
+            date: document.getElementById('fDate').value,
+            kwh: parseFloat(document.getElementById('fKwh').value),
+            type: document.getElementById('fType').value,
+            paid: false
+        });
+        document.getElementById('fKwh').value = '';
+        saveAndRender();
     });
-    document.getElementById('fKwh').value = '';
-    saveAndRender();
-});
+}
 
 function saveAndRender() {
     localStorage.setItem('ev_logs', JSON.stringify(logs));
     render();
 }
 
-function togglePaid(id) {
-    const targetId = String(id);
-    const item = logs.find(x => String(x.id) === targetId);
+// Global verfügbar machen für den Button-Klick
+window.togglePaid = function(id) {
+    // Finde den Eintrag egal ob id als String oder Number gespeichert ist
+    const item = logs.find(x => String(x.id) === String(id));
     if (item) {
         item.paid = !item.paid;
         saveAndRender();
+    } else {
+        console.error("Eintrag mit ID nicht gefunden:", id);
     }
-}
+};
 
-function deleteItem(id) {
-    const targetId = String(id);
-    logs = logs.filter(x => String(x.id) !== targetId);
+window.deleteItem = function(id) {
+    logs = logs.filter(x => String(x.id) !== String(id));
     saveAndRender();
-}
+};
 
-function sortTable(col) {
+window.sortTable = function(col) {
     if (sortCol === col) sortAsc = !sortAsc;
     else { sortCol = col; sortAsc = true; }
     render();
-}
+};
 
-function resetFilter() {
+window.resetFilter = function() {
     document.getElementById('fFrom').value = '';
     document.getElementById('fTo').value = '';
     render();
-}
+};
 
 function render() {
     const tb = document.getElementById('tb');
+    if (!tb) return;
     tb.innerHTML = '';
 
     const from = document.getElementById('fFrom').value;
@@ -110,7 +118,7 @@ function render() {
     document.getElementById('kpiAvg').innerText = totKwh > 0 ? (totCost / totKwh).toFixed(2) + ' €' : '0,00 €';
 }
 
-function exportCSV() {
+window.exportCSV = function() {
     let csv = "\uFEFFDatum;kWh;Ladeart;Bezahlt\n";
     logs.forEach(x => {
         csv += `${x.date};${x.kwh};${x.type};${x.paid ? 'Ja' : 'Nein'}\n`;
@@ -119,9 +127,9 @@ function exportCSV() {
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     a.download = 'ladelog.csv';
     a.click();
-}
+};
 
-function importCSV(e) {
+window.importCSV = function(e) {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -150,11 +158,11 @@ function importCSV(e) {
             }
 
             if (date && !isNaN(kwh)) {
-                imported.push({ id: String(Date.now() + i), date, kwh, type, paid });
+                imported.push({ id: (Date.now() + i).toString(), date, kwh, type, paid });
             }
         }
 
-        if (imported.length > 0) {
+        if (imported.log !== 0 && imported.length > 0) {
             if (confirm(`${imported.length} Einträge gefunden.\n[OK] = Zusammenführen\n[Abbrechen] = Überschreiben`)) {
                 logs = logs.concat(imported);
             } else {
@@ -167,6 +175,7 @@ function importCSV(e) {
         e.target.value = '';
     };
     r.readAsText(file);
-}
+};
 
+// Initialer Aufruf beim Laden
 render();
