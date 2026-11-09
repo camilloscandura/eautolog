@@ -7,15 +7,13 @@ document.getElementById('fDate').valueAsDate = new Date();
 document.getElementById('addForm').addEventListener('submit', (e) => {
     e.preventDefault();
     logs.push({
-        id: Date.now(),
+        id: String(Date.now()),
         date: document.getElementById('fDate').value,
         kwh: parseFloat(document.getElementById('fKwh').value),
         type: document.getElementById('fType').value,
-        note: document.getElementById('fNote').value,
         paid: false
     });
     document.getElementById('fKwh').value = '';
-    document.getElementById('fNote').value = '';
     saveAndRender();
 });
 
@@ -25,12 +23,17 @@ function saveAndRender() {
 }
 
 function togglePaid(id) {
-    const item = logs.find(x => x.id === id);
-    if (item) { item.paid = !item.paid; saveAndRender(); }
+    const targetId = String(id);
+    const item = logs.find(x => String(x.id) === targetId);
+    if (item) {
+        item.paid = !item.paid;
+        saveAndRender();
+    }
 }
 
 function deleteItem(id) {
-    logs = logs.filter(x => x.id !== id);
+    const targetId = String(id);
+    logs = logs.filter(x => String(x.id) !== targetId);
     saveAndRender();
 }
 
@@ -59,11 +62,10 @@ function render() {
         return true;
     });
 
-    // Sortierung
     filtered.sort((a, b) => {
         let valA = a[sortCol], valB = b[sortCol];
-        if (sortCol === 'rate') { valA = TARIFE[a.type]; valB = TARIFE[b.type]; }
-        if (sortCol === 'cost') { valA = a.kwh * TARIFE[a.type]; valB = b.kwh * TARIFE[b.type]; }
+        if (sortCol === 'rate') { valA = TARIFE[a.type] || 0; valB = TARIFE[b.type] || 0; }
+        if (sortCol === 'cost') { valA = a.kwh * (TARIFE[a.type] || 0); valB = b.kwh * (TARIFE[b.type] || 0); }
         if (valA < valB) return sortAsc ? -1 : 1;
         if (valA > valB) return sortAsc ? 1 : -1;
         return 0;
@@ -91,13 +93,12 @@ function render() {
             <td>${rate.toFixed(2)} €</td>
             <td><b>${cost.toFixed(2)} €</b></td>
             <td>
-                <button onclick="togglePaid(${x.id})" class="${x.paid ? 'paid-btn' : 'unpaid-btn'}">
+                <button type="button" onclick="togglePaid('${x.id}')" class="${x.paid ? 'paid-btn' : 'unpaid-btn'}">
                     ${x.paid ? '✓ Bezahlt' : '✗ Offen'}
                 </button>
             </td>
-            <td>${x.note || '-'}</td>
             <td style="text-align:right">
-                <button onclick="deleteItem(${x.id})" class="del-btn" title="Löschen">🗑</button>
+                <button type="button" onclick="deleteItem('${x.id}')" class="del-btn" title="Löschen">🗑</button>
             </td>
         `;
         tb.appendChild(tr);
@@ -110,9 +111,9 @@ function render() {
 }
 
 function exportCSV() {
-    let csv = "\uFEFFDatum;kWh;Ladeart;Bezahlt;Notiz\n";
+    let csv = "\uFEFFDatum;kWh;Ladeart;Bezahlt\n";
     logs.forEach(x => {
-        csv += `${x.date};${x.kwh};${x.type};${x.paid ? 'Ja' : 'Nein'};"${(x.note || '').replace(/"/g, '""')}"\n`;
+        csv += `${x.date};${x.kwh};${x.type};${x.paid ? 'Ja' : 'Nein'}\n`;
     });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -140,27 +141,16 @@ function importCSV(e) {
             const kwh = parseFloat(cols[1].replace(/"/g, '').replace(',', '.'));
             let type = cols[2].replace(/"/g, '').trim();
             
-            // Abwärtskompatibler Bezahlt-Check
             let paid = false;
-            let note = '';
-
             if (cols.length >= 4) {
                 const val4 = cols[3].replace(/"/g, '').trim();
                 if (val4.toLowerCase() === 'ja' || val4.toLowerCase() === 'true' || val4 === '1') {
                     paid = true;
-                } else if (val4.toLowerCase() === 'nein' || val4.toLowerCase() === 'false' || val4 === '0') {
-                    paid = false;
-                } else {
-                    note = val4; // Falls alte CSV-Spalte 4 Notiz war
                 }
             }
 
-            if (cols.length >= 5 && !note) {
-                note = cols[4].replace(/"/g, '').trim();
-            }
-
             if (date && !isNaN(kwh)) {
-                imported.push({ id: Date.now() + i, date, kwh, type, paid, note });
+                imported.push({ id: String(Date.now() + i), date, kwh, type, paid });
             }
         }
 
